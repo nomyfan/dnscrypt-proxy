@@ -7,8 +7,11 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"path"
 	"runtime"
+	"sort"
 	"sync"
+	"time"
 
 	"github.com/jedisct1/dlog"
 	"github.com/kardianos/service"
@@ -109,13 +112,14 @@ func main() {
 		}
 		return
 	}
-	if svc != nil {
-		if err := svc.Run(); err != nil {
-			dlog.Fatal(err)
-		}
-	} else {
-		app.Start(nil)
-	}
+	app.testServers()
+	//if svc != nil {
+	//	if err := svc.Run(); err != nil {
+	//		dlog.Fatal(err)
+	//	}
+	//} else {
+	//	app.Start(nil)
+	//}
 }
 
 func (app *App) Start(service service.Service) error {
@@ -127,6 +131,35 @@ func (app *App) Start(service service.Service) error {
 		app.AppMain()
 	}
 	return nil
+}
+
+func (app *App) testServers() {
+	dirname := path.Dir(*app.flags.ConfigFile)
+	if err := ConfigLoad(app.proxy, app.flags); err != nil {
+		panic("config")
+	}
+	if _, err := app.proxy.serversInfo.refresh(app.proxy); err != nil {
+		panic("servers info refresh")
+	}
+	servers := make([]struct {
+		name string
+		rtt  int
+	}, len(app.proxy.serversInfo.inner))
+	for i, server := range app.proxy.serversInfo.inner {
+		servers[i].name = server.Name
+		servers[i].rtt = server.initialRtt
+	}
+	sort.Slice(servers, func(i, j int) bool {
+		return servers[i].rtt < servers[j].rtt
+	})
+	tomlStr := "server_names = [\n"
+	for _, server := range servers {
+		tomlStr += fmt.Sprintf("  '%s', # %dms\n", server.name, server.rtt)
+	}
+	tomlStr += "]\n\n"
+	if err := os.WriteFile(path.Join(dirname, "servers-"+(time.Now().Format("2006010215m04h05s"+".toml"))), []byte(tomlStr), 0644); err != nil {
+		panic("write toml")
+	}
 }
 
 func (app *App) AppMain() {

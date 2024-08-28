@@ -721,15 +721,15 @@ func ConfigLoad(proxy *Proxy, flags *ConfigFlags) error {
 		if err := NetProbe(proxy, netprobeAddress, netprobeTimeout); err != nil {
 			return err
 		}
-		for _, listenAddrStr := range proxy.listenAddresses {
-			proxy.addDNSListener(listenAddrStr)
-		}
-		for _, listenAddrStr := range proxy.localDoHListenAddresses {
-			proxy.addLocalDoHListener(listenAddrStr)
-		}
-		if err := proxy.addSystemDListeners(); err != nil {
-			return err
-		}
+		//for _, listenAddrStr := range proxy.listenAddresses {
+		//	proxy.addDNSListener(listenAddrStr)
+		//}
+		//for _, listenAddrStr := range proxy.localDoHListenAddresses {
+		//	proxy.addLocalDoHListener(listenAddrStr)
+		//}
+		//if err := proxy.addSystemDListeners(); err != nil {
+		//	return err
+		//}
 	}
 	// if 'userName' is set and we are the parent process drop privilege and exit
 	if len(proxy.userName) > 0 && !proxy.child {
